@@ -41,6 +41,7 @@ module Roo
       sheet_options[:expand_merged_ranges] = (options[:expand_merged_ranges] || false)
       sheet_options[:no_hyperlinks] = (options[:no_hyperlinks] || false)
       sheet_options[:empty_cell] = (options[:empty_cell] || false)
+      sheet_options[:fallback_to_string] = (options[:fallback_to_string] || false)
       shared_options = {}
 
       shared_options[:disable_html_wrapper] = (options[:disable_html_wrapper] || false)

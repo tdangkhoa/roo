@@ -143,38 +143,46 @@ module Roo
         #          and use a Boolean for it's value. Using a Boolean value breaks
         #          Roo::Base#to_csv.
         #       3. formula
-        case value_type
-        when :shared
-          cell_content = cell.content.to_i
-          value = shared_strings.use_html?(cell_content) ? shared_strings.to_html[cell_content] : shared_strings[cell_content]
-          Excelx::Cell.cell_class(:string).new(value, formula, style, hyperlink, coordinate)
-        when :boolean, :string
-          value = cell.content
-          Excelx::Cell.cell_class(value_type).new(value, formula, style, hyperlink, coordinate)
-        when :time, :datetime
-          cell_content = cell.content.to_f
-          # NOTE: A date will be a whole number. A time will have be > 1. And
-          #      in general, a datetime will have decimals. But if the cell is
-          #      using a custom format, it's possible to be interpreted incorrectly.
-          #      cell_content.to_i == cell_content && standard_style?=> :date
-          #
-          #      Should check to see if the format is standard or not. If it's a
-          #      standard format, than it's a date, otherwise, it is a datetime.
-          #      @styles.standard_style?(style_id)
-          #      STANDARD_STYLES.keys.include?(style_id.to_i)
-          cell_type = if cell_content < 1.0
-                        :time
-                      elsif (cell_content - cell_content.floor).abs > 0.000001
-                        :datetime
-                      else
-                        :date
-                      end
-          base_value = cell_type == :date ? base_date : base_timestamp
-          Excelx::Cell.cell_class(cell_type).new(cell_content, formula, excelx_type, style, hyperlink, base_value, coordinate)
-        when :date
-          Excelx::Cell.cell_class(:date).new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
-        else
-          Excelx::Cell.cell_class(:number).new(cell.content, formula, excelx_type, style, hyperlink, coordinate)
+        begin
+          case value_type
+          when :shared
+            cell_content = cell.content.to_i
+            value = shared_strings.use_html?(cell_content) ? shared_strings.to_html[cell_content] : shared_strings[cell_content]
+            Excelx::Cell.cell_class(:string).new(value, formula, style, hyperlink, coordinate)
+          when :boolean, :string
+            value = cell.content
+            Excelx::Cell.cell_class(value_type).new(value, formula, style, hyperlink, coordinate)
+          when :time, :datetime
+            cell_content = cell.content.to_f
+            # NOTE: A date will be a whole number. A time will have be > 1. And
+            #      in general, a datetime will have decimals. But if the cell is
+            #      using a custom format, it's possible to be interpreted incorrectly.
+            #      cell_content.to_i == cell_content && standard_style?=> :date
+            #
+            #      Should check to see if the format is standard or not. If it's a
+            #      standard format, than it's a date, otherwise, it is a datetime.
+            #      @styles.standard_style?(style_id)
+            #      STANDARD_STYLES.keys.include?(style_id.to_i)
+            cell_type = if cell_content < 1.0
+                          :time
+                        elsif (cell_content - cell_content.floor).abs > 0.000001
+                          :datetime
+                        else
+                          :date
+                        end
+            base_value = cell_type == :date ? base_date : base_timestamp
+            Excelx::Cell.cell_class(cell_type).new(cell_content, formula, excelx_type, style, hyperlink, base_value, coordinate)
+          when :date
+            Excelx::Cell.cell_class(:date).new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          else
+            Excelx::Cell.cell_class(:number).new(cell.content, formula, excelx_type, style, hyperlink, coordinate)
+          end
+        rescue ArgumentError
+          if @options[:fallback_to_string]
+            Excelx::Cell.cell_class(:string).new(cell.content, formula, style, hyperlink, coordinate)
+          else
+            raise
+          end
         end
       end
 
